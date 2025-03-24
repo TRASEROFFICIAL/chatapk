@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Chat Grup</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body {
+  font-family: Arial, sans-serif;
+  background-image: url('https://www.baltana.com/files/wallpapers-13/Anonymous-Black-Background-Desktop-Widescreen-Wallpapers-34057.jpg');
+  background-size: cover;
+  background-position: center;
+  margin: 0;
+  padding: 0;
+  user-select: text;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+        header {
+            background-color: #075E54;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 16px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 10;
+        }
+        #onlineCount {
+            font-size: 13px;
+            display: block;
+            opacity: 0.8;
+        }
+        main {
+            flex: 1;
+            padding: 60px 10px 80px;
+            overflow-y: auto;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .chat-item {
+            max-width: 65%;
+            padding: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            background-color: #dcf8c6;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+        .chat-item.self {
+            background-color: #ff;
+            align-self: flex-end;
+        }
+        .chat-item img.avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .chat-item img.sticker {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+        }
+        .chat-input {
+            position: fixed;
+            bottom: 0;
+            width: 95%;
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-top: 1px solid #ccc;
+        }
+        .sticker-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        input {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button.send-btn {
+            margin-left: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #25D366;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .sticker-menu {
+            position: absolute;
+            bottom: 50px;
+            left: 10px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 5px;
+            display: none;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .sticker-menu img {
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <span id="groupTitle">Anon TeamSec</span>
+        <span id="onlineCount">Traser X4</span>
+    </header>
+
+    <main>
+        <div id="chatList" class="chat-container"></div>
+    </main>
+
+    <div class="chat-input">
+        <button class="sticker-btn" onclick="toggleStickerMenu()">🩸</button>
+        <input type="text" id="messageInput" placeholder="Ketik pesan...">
+        <button class="send-btn" onclick="sendMessage()">></button></button>
+    </div>
+
+    <div id="stickerMenu" class="sticker-menu">
+        <img src="https://i.imgflip.com/7roptc.jpg?a484056" onclick="sendSticker(this.src)">
+        <img src="https://www.meme-arsenal.com/memes/b083953fef724452ae08200c9b7ed917.jpg" onclick="sendSticker(this.src)">
+        <img src="https://play-lh.googleusercontent.com/fogyjHATh7xaBkUJ-U5QE-2hCBP1urBR0dEANi8od7ypwIJDYzitbKXPBzAZ3sbujQ" onclick="sendSticker(this.src)">
+        <img src="https://i.pinimg.com/474x/0b/cd/02/0bcd026b0e3d6392140834ee186b410f.jpg" onclick="sendSticker(this.src)">
+        <img src="https://mumbai.nyc3.cdn.digitaloceanspaces.com/0362_y_st/sticker-fan_19732108_a.png" onclick="sendSticker(this.src)">
+                <img src="https://i.pinimg.com/236x/67/3a/fd/673afd2cee380edb842bec2867010c1f.jpg" onclick="sendSticker(this.src)">
+                <img src="https://i.pinimg.com/236x/4f/98/0a/4f980a7dad520471840d1a44d3460343.jpg" onclick="sendSticker(this.src)">
+                <img src="https://i.pinimg.com/474x/63/9a/67/639a675b1ab4c1428a820d4be647a79a.jpg" onclick="sendSticker(this.src)">
+    </div>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyBVMpOCjY9gdd4UkSa",
+            authDomain: "yanofc-1ecd3.firebaseapp.com",
+            databaseURL: "https://yanofc-1ecd3-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "yanofc-1ecd3",
+            storageBucket: "yanofc-1ecd3.appspot.com",
+            messagingSenderId: "843043156565",
+            appId: "1:843043156565:web:e00942a837d30e4b4a9adc"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+
+        if (!localStorage.getItem("username")) {
+            var username = prompt("Masukkan Nama Anda:");
+            var photoURL = prompt("Masukkan URL Foto Anda:") || "https://www.w3schools.com/howto/img_avatar.png";
+            localStorage.setItem("username", username);
+            localStorage.setItem("photoURL", photoURL);
+        }
+
+        var username = localStorage.getItem("username");
+        var photoURL = localStorage.getItem("photoURL");
+
+        function loadMessages() {
+            var chatList = document.getElementById("chatList");
+            db.ref("messages").on("value", function(snapshot) {
+                chatList.innerHTML = "";
+                snapshot.forEach(function(childSnapshot) {
+                    var msg = childSnapshot.val();
+                    var div = document.createElement("div");
+                    div.classList.add("chat-item");
+                    if (msg.sender === username) div.classList.add("self");
+
+                    var isSticker = msg.text && msg.text.startsWith("http");
+                    div.innerHTML = `
+                        <img class="avatar" src="${msg.photo || 'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/i/6873254d-c380-460a-a41f-fbf0a7cce980/d6rv32a-5af9d818-6d89-4057-8c48-f4a68f1bb7fa.png'}">
+                        <div><b>${msg.sender}:</b> ${isSticker ? `<img class="sticker" src="${msg.text}">` : msg.text}</div>
+                    `;
+                    chatList.appendChild(div);
+                });
+                chatList.scrollTop = chatList.scrollHeight;
+            });
+        }
+
+        function sendMessage() {
+            var text = document.getElementById("messageInput").value.trim();
+            if (text) {
+                db.ref("messages").push({ sender: username, text, photo: photoURL });
+                document.getElementById("messageInput").value = "";
+            }
+        }
+
+        function sendSticker(url) {
+            db.ref("messages").push({ sender: username, text: url, photo: photoURL });
+        }
+
+        function toggleStickerMenu() {
+            var menu = document.getElementById("stickerMenu");
+            menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+        }
+
+        loadMessages();
+    </script>
+</body>
+  </html>
